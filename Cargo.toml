@@ -1,0 +1,14 @@
+[package]
+authors = ["Belén Albeza <belen.albeza@gmail.com>"]
+edition = "2018"
+name = "aoc-2020"
+version = "0.1.0"
+
+[lib]
+bench = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+aoc-runner = "0.3.0"
+aoc-runner-derive = "0.3.0"
