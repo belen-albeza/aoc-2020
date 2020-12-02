@@ -47,3 +47,33 @@ for i in 0..entries.len() {
   }
 }
 ```
+
+### Day 2
+
+I learned a bunch of Rust with today's puzzle:
+
+- How to create regexes with named capture groups.
+- Use the `lazy_static!` macro to compute a value only once
+- How to return a closure
+
+I used a regex to parse the policy and extract its config:
+
+```rust
+lazy_static! {
+  static ref PARSER: Regex =
+    Regex::new(r"(?P<num1>\d+)\-(?P<num2>\d+)\s(?P<character>\w)").unwrap();
+}
+```
+
+And then I have two functions (one per password policy) that return a closure that performs the password validation. For instance, this is the closure returned for the first policy:
+
+```rust
+Box::new(move |text| {
+  let amount = text
+    .chars()
+    .filter(|&x| x == policy.character)
+    .collect::<String>()
+    .len() as u32;
+  amount >= policy.num1 && amount <= policy.num2
+})
+```
