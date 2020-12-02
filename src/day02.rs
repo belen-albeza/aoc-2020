@@ -50,6 +50,19 @@ fn build_old_validator(raw_policy: &str) -> Validator {
   });
 }
 
+fn build_new_validator(raw_policy: &str) -> Validator {
+  // parse the policy to get its config
+  let policy = parse_policy(raw_policy);
+
+  // build a function from that config
+  return Box::new(move |text| {
+    let is_at_1st_pos = text.chars().nth((policy.num1 as usize) - 1).unwrap() == policy.character;
+    let is_at_2nd_pos = text.chars().nth((policy.num2 as usize) - 1).unwrap() == policy.character;
+
+    is_at_1st_pos ^ is_at_2nd_pos
+  });
+}
+
 pub fn is_valid_password(
   policy: &str,
   password: &str,
@@ -82,12 +95,24 @@ pub fn solve_part1(entries: &[(String, String)]) -> u32 {
   })
 }
 
+#[aoc(day2, part2)]
+pub fn solve_part2(entries: &[(String, String)]) -> u32 {
+  entries.iter().fold(0, |total, entry| {
+    let result = if is_valid_password(&entry.0, &entry.1, build_new_validator) {
+      1
+    } else {
+      0
+    };
+    total + result
+  })
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
 
   #[test]
-  fn test_is_valid_password_with_old_validator() {
+  fn test_is_valid_password_with_old_policy() {
     assert_eq!(
       is_valid_password("1-3 a", "abcde", build_old_validator),
       true
@@ -114,5 +139,35 @@ mod tests {
       ("2-9 c".to_string(), "ccccccccc".to_string()),
     ];
     assert_eq!(solve_part1(&entries), 2);
+  }
+
+  #[test]
+  fn test_is_valid_password_with_new_policy() {
+    assert_eq!(
+      is_valid_password("1-3 a", "abcde", build_new_validator),
+      true
+    );
+    assert_eq!(
+      is_valid_password("1-3 b", "cdefg", build_new_validator),
+      false
+    );
+    assert_eq!(
+      is_valid_password("2-9 c", "ccccccccc", build_new_validator),
+      false
+    );
+    assert_eq!(
+      is_valid_password("1-4 a", "fafa", build_new_validator),
+      true
+    );
+  }
+
+  #[test]
+  fn test_solve_part2() {
+    let entries: [(String, String); 3] = [
+      ("1-3 a".to_string(), "abcde".to_string()),
+      ("1-3 b".to_string(), "cdefg".to_string()),
+      ("2-9 c".to_string(), "ccccccccc".to_string()),
+    ];
+    assert_eq!(solve_part2(&entries), 1);
   }
 }
