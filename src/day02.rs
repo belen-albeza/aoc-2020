@@ -3,21 +3,23 @@ use aoc_runner_derive::aoc_generator;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-struct Policy {
-  min: u32,
-  max: u32,
+struct PolicyConfig {
+  num1: u32,
+  num2: u32,
   character: char,
 }
 
-fn parse_policy(raw_policy: &str) -> Policy {
+type Validator = Box<dyn Fn(&str) -> bool>;
+
+fn parse_policy(raw_policy: &str) -> PolicyConfig {
   lazy_static! { // use lazy_static to compile the regex only once
     static ref PARSER: Regex =
-      Regex::new(r"(?P<min>\d+)\-(?P<max>\d+)\s(?P<character>\w)").unwrap();
+      Regex::new(r"(?P<num1>\d+)\-(?P<num2>\d+)\s(?P<character>\w)").unwrap();
   }
 
   let captured = PARSER.captures(raw_policy).unwrap();
-  let min = captured.name("min").unwrap().as_str().parse().unwrap();
-  let max = captured.name("max").unwrap().as_str().parse().unwrap();
+  let num1 = captured.name("num1").unwrap().as_str().parse().unwrap();
+  let num2 = captured.name("num2").unwrap().as_str().parse().unwrap();
   let character = captured
     .name("character")
     .unwrap()
@@ -26,14 +28,14 @@ fn parse_policy(raw_policy: &str) -> Policy {
     .next()
     .unwrap();
 
-  return Policy {
-    min: min,
-    max: max,
+  return PolicyConfig {
+    num1: num1,
+    num2: num2,
     character: character,
   };
 }
 
-fn build_validator_regex(raw_policy: &str) -> Box<dyn Fn(&str) -> bool> {
+fn build_old_validator(raw_policy: &str) -> Validator {
   // parse the policy to get its config
   let policy = parse_policy(raw_policy);
 
@@ -44,12 +46,16 @@ fn build_validator_regex(raw_policy: &str) -> Box<dyn Fn(&str) -> bool> {
       .filter(|&x| x == policy.character)
       .collect::<String>()
       .len() as u32;
-    amount >= policy.min && amount <= policy.max
+    amount >= policy.num1 && amount <= policy.num2
   });
 }
 
-pub fn is_valid_password(policy: &str, password: &str) -> bool {
-  let validator = build_validator_regex(policy);
+pub fn is_valid_password(
+  policy: &str,
+  password: &str,
+  validator_builder: fn(&str) -> Validator,
+) -> bool {
+  let validator = validator_builder(policy);
   return validator(password);
 }
 
@@ -67,7 +73,7 @@ pub fn parse_input(input: &str) -> Vec<(String, String)> {
 #[aoc(day2, part1)]
 pub fn solve_part1(entries: &[(String, String)]) -> u32 {
   entries.iter().fold(0, |total, entry| {
-    let result = if is_valid_password(&entry.0, &entry.1) {
+    let result = if is_valid_password(&entry.0, &entry.1, build_old_validator) {
       1
     } else {
       0
@@ -81,11 +87,23 @@ mod tests {
   use super::*;
 
   #[test]
-  fn test_is_valid_password() {
-    assert_eq!(is_valid_password("1-3 a", "abcde"), true);
-    assert_eq!(is_valid_password("1-3 b", "cdefg"), false);
-    assert_eq!(is_valid_password("2-9 c", "ccccccccc"), true);
-    assert_eq!(is_valid_password("2-2 a", "fafa"), true);
+  fn test_is_valid_password_with_old_validator() {
+    assert_eq!(
+      is_valid_password("1-3 a", "abcde", build_old_validator),
+      true
+    );
+    assert_eq!(
+      is_valid_password("1-3 b", "cdefg", build_old_validator),
+      false
+    );
+    assert_eq!(
+      is_valid_password("2-9 c", "ccccccccc", build_old_validator),
+      true
+    );
+    assert_eq!(
+      is_valid_password("2-2 a", "fafa", build_old_validator),
+      true
+    );
   }
 
   #[test]
