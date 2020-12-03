@@ -77,3 +77,50 @@ Box::new(move |text| {
   amount >= policy.num1 && amount <= policy.num2
 })
 ```
+
+### Day 3
+
+I took this as an opportunity to learn how to implement a custom iterator in Rust.
+
+```rust
+impl SlopeIterator {
+  fn new(slope: (usize, usize), map: &Map) -> Self {
+    SlopeIterator {
+      slope: slope,
+      current: (0, 0),
+      limit: (usize::MAX, map.height - 1),
+    }
+  }
+}
+
+impl Iterator for SlopeIterator {
+  type Item = (usize, usize);
+
+  fn next(&mut self) -> Option<(usize, usize)> {
+    if self.current.0 > self.limit.0 || self.current.1 > self.limit.1 {
+      return None;
+    }
+
+    let res = self.current;
+    self.current.0 += self.slope.0;
+    self.current.1 += self.slope.1;
+
+    return Some(res);
+  }
+}
+```
+
+With that iterator, traversing the map to look for cells with trees it's quite simple:
+
+```rust
+iterator.fold(0, |total, (x, y)| {
+  let inc = match map.get_cell(x, y) {
+    Some(Cell::Tree) => 1,
+    _ => 0,
+  };
+
+  total + inc
+})
+```
+
+I had problems with **part 2**, because it asks to multiply partial results and supply that result as the answer for the puzzle, but I was using `u32` and there was an overflow I wasn't noticing… I got the real result once I switched to `u64`.
