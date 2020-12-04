@@ -124,3 +124,35 @@ iterator.fold(0, |total, (x, y)| {
 ```
 
 I had problems with **part 2**, because it asks to multiply partial results and supply that result as the answer for the puzzle, but I was using `u32` and there was an overflow I wasn't noticing… I got the real result once I switched to `u64`.
+
+### Day 4
+
+Today's puzzles were simple, but tedious. I'm thankful for how easy is to add and run unit tests in Rust.
+
+I decided to use "new" (for me in Rust!) data structures: `HashMap` to hold the passport information, and `HashSet` for the required fields. This way, it's easy to see which fields are missing:
+
+```rust
+let required_fields: HashSet<String> = ["ecl", "pid", "eyr", "hcl", "byr", "iyr", "cid", "hgt"]
+    .iter()
+    .map(|x| x.to_string())
+    .collect();
+
+let passport_fields: HashSet<String> = passport.keys().cloned().collect();
+let missing: Vec<&String> = required_fields.difference(&passport_fields).collect();
+```
+
+For part 2, I ended up creating separate functions to validate each data type –so I could unit test them separately. Once that's in place, checking whether a field is valid with `match` is quite readable:
+
+```rust
+let is_valid: bool = match field.as_str() {
+  "byr" => is_valid_number(value, 1920, 2002),
+  "iyr" => is_valid_number(value, 2010, 2020),
+  "eyr" => is_valid_number(value, 2020, 2030),
+  "hgt" => is_valid_height(value),
+  "hcl" => is_valid_hex_number(value),
+  "ecl" => is_valid_eye_color(value),
+  "pid" => is_valid_passport_id(value),
+  "cid" => true,
+  _ => false,
+};
+```
