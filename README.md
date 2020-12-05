@@ -156,3 +156,28 @@ let is_valid: bool = match field.as_str() {
   _ => false,
 };
 ```
+
+### Day 5
+
+Today's been more fun that yesterday. I created a recursive function to do this partition of left/front vs right/back, and got to play with ranges in Rust:
+
+```rust
+pub fn locate(range: Range<usize>, locator: &[Dir]) -> usize {
+  let length = range.len();
+
+  if length > 2 {
+    let new_range = match locator[0] {
+      Dir::Lower => range.start..(range.start + length / 2),
+      Dir::Higher => (range.start + length / 2)..range.end,
+    };
+    locate(new_range, &locator[1..])
+  } else {
+    match locator[0] {
+      Dir::Lower => range.start,
+      Dir::Higher => range.end - 1, // -1 because range.end is not inclusive
+    }
+  }
+}
+```
+
+For the second part of the puzzle, the hardest bit was to understand the wording of the problem 😅
