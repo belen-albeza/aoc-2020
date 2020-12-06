@@ -86,12 +86,12 @@ pub fn solve_part2(boarding_passes: &[BoardingPass]) -> usize {
 
   for i in 0..seat_ids.len() {
     // skip first and last seats
-    if (i == 0 || i >= seat_ids.len() - 1) {
+    if i == 0 || i >= seat_ids.len() - 1 {
       continue;
     }
 
     // detect a gap of a single seat
-    if (seat_ids[i - 1] == seat_ids[i] - 2) {
+    if seat_ids[i - 1] == seat_ids[i] - 2 {
       return seat_ids[i] - 1 as usize;
     }
   }

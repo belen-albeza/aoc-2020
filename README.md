@@ -181,3 +181,47 @@ pub fn locate(range: Range<usize>, locator: &[Dir]) -> usize {
 ```
 
 For the second part of the puzzle, the hardest bit was to understand the wording of the problem 😅
+
+### Day 6
+
+Today's puzzle was perfect for practicing with `HashSet`s. Part 1 was quite easy, I just had to build a list of sets with the answers of each group, removing any repitition (which is done automatically in sets):
+
+```rust
+type Group = HashSet<char>;
+
+// ...
+#[aoc_generator(day6, part1)]
+pub fn parse_input_part1(input: &str) -> Vec<Group> {
+  input
+    .split("\n\n")
+    .map(|raw_group| {
+      raw_group
+        .lines()
+        .collect::<Vec<&str>>()
+        .concat()
+        .chars()
+        .collect()
+    })
+    .collect()
+}
+```
+
+Part 2 was more challenging in terms of references, copying, etc. This solution is not performant memory-wise (since a new set is created for each intersection operation), but it works:
+
+```rust
+input
+  .split("\n\n")
+  .map(|raw_group| {
+    let answers: Vec<Group> = raw_group
+      .lines()
+      .collect::<Vec<&str>>()
+      .iter()
+      .map(|person_answers| person_answers.chars().collect::<Group>())
+      .collect();
+
+    answers.iter().fold(answers[0].clone(), |result, partial| {
+      result.intersection(&partial).copied().collect::<Group>()
+    })
+  })
+  .collect()`
+```
