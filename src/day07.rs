@@ -24,11 +24,8 @@ fn find_amount_contained(ruleset: &Ruleset, target: &str) -> u32 {
   let mut result: u32 = 0;
 
   if let Some(contained) = ruleset.get(target) {
-    result += contained
-      .iter()
-      .fold(0, |total, (amount, _)| total + amount);
     for (amount, bag) in contained {
-      result += amount * find_amount_contained(ruleset, bag);
+      result += amount + amount * find_amount_contained(ruleset, bag);
     }
   }
 

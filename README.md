@@ -228,6 +228,8 @@ input
 
 ### Day 7
 
+So this one was frustrating, because what I chose to do for part 1 was not the proper approach to handle part 2… Initially I had a ruleset in the form of a `HashMap`, whose keys were the _contained_ bag, and the values where the _container_ bags.
+
 ```rust
 type Ruleset = HashMap<String, Vec<String>>;
 
@@ -239,6 +241,37 @@ fn find_containers(ruleset: &Ruleset, targets: &[String]) -> HashSet<String> {
       result.extend(find_containers(ruleset, containers));
     }
   }
+  result
+}
+```
+
+For part 2, not only we had to take into account how many other bags a bag could hold, but it required a top-bottom approach (i.e. start from one bag, and go through all of its contents). So I changed the ruleset for a new `HashMap`, this time with the _containers_ as keys, and their contents as `(amount, bag_color)` pairs.
+
+Since today I had a day off at work, and I had the time, I ended up refactoring part 1 code so it could use this same data structure:
+
+```rust
+fn find_containers(ruleset: &Ruleset, target: &str) -> HashSet<String> {
+  let mut result: HashSet<String> = HashSet::new();
+
+  for (outer, inner) in ruleset.iter() {
+    if inner.iter().find(|(_, color)| color == target).is_some() {
+      result.insert(outer.to_string());
+      result.extend(find_containers(ruleset, outer))
+    }
+  }
+
+  result
+}
+
+fn find_amount_contained(ruleset: &Ruleset, target: &str) -> u32 {
+  let mut result: u32 = 0;
+
+  if let Some(contained) = ruleset.get(target) {
+    for (amount, bag) in contained {
+      result += amount + amount * find_amount_contained(ruleset, bag);
+    }
+  }
+
   result
 }
 ```
