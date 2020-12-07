@@ -225,3 +225,20 @@ input
   })
   .collect()`
 ```
+
+### Day 7
+
+```rust
+type Ruleset = HashMap<String, Vec<String>>;
+
+fn find_containers(ruleset: &Ruleset, targets: &[String]) -> HashSet<String> {
+  let mut result: HashSet<String> = HashSet::new();
+  for target in targets.iter() {
+    if let Some(containers) = ruleset.get(&target.to_string()) {
+      result.extend(containers.iter().cloned());
+      result.extend(find_containers(ruleset, containers));
+    }
+  }
+  result
+}
+```

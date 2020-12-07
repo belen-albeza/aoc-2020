@@ -5,21 +5,22 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
-type Ruleset = HashMap<String, Vec<String>>;
-type ExtendedRuleset = HashMap<String, Vec<(u32, String)>>;
+type Ruleset = HashMap<String, Vec<(u32, String)>>;
 
-fn find_containers(ruleset: &Ruleset, targets: &[String]) -> HashSet<String> {
+fn find_containers(ruleset: &Ruleset, target: &str) -> HashSet<String> {
   let mut result: HashSet<String> = HashSet::new();
-  for target in targets.iter() {
-    if let Some(containers) = ruleset.get(&target.to_string()) {
-      result.extend(containers.iter().cloned());
-      result.extend(find_containers(ruleset, containers));
+
+  for (outer, inner) in ruleset.iter() {
+    if inner.iter().find(|(_, color)| color == target).is_some() {
+      result.insert(outer.to_string());
+      result.extend(find_containers(ruleset, outer))
     }
   }
+
   result
 }
 
-fn find_amount_contained(ruleset: &ExtendedRuleset, target: &str) -> u32 {
+fn find_amount_contained(ruleset: &Ruleset, target: &str) -> u32 {
   let mut result: u32 = 0;
 
   if let Some(contained) = ruleset.get(target) {
@@ -32,29 +33,6 @@ fn find_amount_contained(ruleset: &ExtendedRuleset, target: &str) -> u32 {
   }
 
   result
-}
-
-fn parse_extended_ruleset(input: &str) -> ExtendedRuleset {
-  let mut ruleset = ExtendedRuleset::new();
-
-  for line in input.lines() {
-    let parts: Vec<&str> = line
-      .trim_end_matches(".")
-      .split("contain")
-      .map(|x| x.trim())
-      .collect();
-    let inner: Vec<(u32, String)> = parts[1]
-      .split(", ")
-      .map(parse_bag_spec)
-      .filter(|x| x.is_some())
-      .map(|x| x.unwrap())
-      .collect();
-    let outer = parse_bag_spec(parts[0]).unwrap().1;
-
-    ruleset.insert(outer, inner);
-  }
-
-  ruleset
 }
 
 fn parse_bag_spec(input: &str) -> Option<(u32, String)> {
@@ -79,7 +57,8 @@ fn parse_bag_spec(input: &str) -> Option<(u32, String)> {
   }
 }
 
-fn parse_ruleset(input: &str) -> Ruleset {
+#[aoc_generator(day7)]
+pub fn parse_input(input: &str) -> Ruleset {
   let mut ruleset = Ruleset::new();
 
   for line in input.lines() {
@@ -88,39 +67,28 @@ fn parse_ruleset(input: &str) -> Ruleset {
       .split("contain")
       .map(|x| x.trim())
       .collect();
-    let inner = parts[1]
+    let inner: Vec<(u32, String)> = parts[1]
       .split(", ")
       .map(parse_bag_spec)
       .filter(|x| x.is_some())
-      .map(|x| x.unwrap());
+      .map(|x| x.unwrap())
+      .collect();
+    let outer = parse_bag_spec(parts[0]).unwrap().1;
 
-    for bag in inner {
-      let outer = parse_bag_spec(parts[0]).unwrap().1;
-      if let Some(containers) = ruleset.get_mut(&bag.1) {
-        containers.extend(vec![outer.to_string()]);
-      } else {
-        ruleset.insert(bag.1, vec![outer.to_string()]);
-      }
-    }
+    ruleset.insert(outer, inner);
   }
 
   ruleset
 }
 
-#[aoc_generator(day7)]
-pub fn parse_input(input: &str) -> (Ruleset, ExtendedRuleset) {
-  (parse_ruleset(input), parse_extended_ruleset(input))
-}
-
 #[aoc(day7, part1)]
-pub fn solve_part1(rulesets: &(Ruleset, ExtendedRuleset)) -> u32 {
-  let target = String::from("shiny gold");
-  find_containers(&rulesets.0, &vec![target]).len() as u32
+pub fn solve_part1(ruleset: &Ruleset) -> u32 {
+  find_containers(ruleset, "shiny gold").len() as u32
 }
 
 #[aoc(day7, part2)]
-pub fn solve_part2(ruleset: &(Ruleset, ExtendedRuleset)) -> u32 {
-  find_amount_contained(&ruleset.1, "shiny gold")
+pub fn solve_part2(ruleset: &Ruleset) -> u32 {
+  find_amount_contained(ruleset, "shiny gold")
 }
 
 #[cfg(test)]
@@ -155,13 +123,13 @@ mod tests {
   }
 
   #[test]
-  fn test_parse_extended_ruleset() {
+  fn test_parse_input() {
     let input = "light red bags contain 1 bright white bag, 2 muted yellow bags.
 bright white bags contain 1 shiny gold bag.
 shiny gold bags contain 2 bright white bags.
 faded blue bags contain no other bags.";
 
-    let expected_ruleset: ExtendedRuleset = vec![
+    let expected_ruleset: Ruleset = vec![
       (RED, vec![(1, WHITE), (2, YELLOW)]),
       (WHITE, vec![(1, GOLD)]),
       (GOLD, vec![(2, WHITE)]),
@@ -179,36 +147,12 @@ faded blue bags contain no other bags.";
     })
     .collect();
 
-    assert_eq!(parse_extended_ruleset(input), expected_ruleset);
+    assert_eq!(parse_input(input), expected_ruleset);
   }
 
   #[test]
-  fn test_parse_ruleset() {
-    let input = "light red bags contain 1 bright white bag, 2 muted yellow bags.
-bright white bags contain 1 shiny gold bag.
-shiny gold bags contain 2 bright white bags.
-faded blue bags contain no other bags.";
-
-    let expected_ruleset: Ruleset = vec![
-      (WHITE, vec![RED, GOLD]),
-      (YELLOW, vec![RED]),
-      (GOLD, vec![WHITE]),
-    ]
-    .iter()
-    .map(|(key, value)| {
-      (
-        key.to_string(),
-        value.iter().map(|x| x.to_string()).collect(),
-      )
-    })
-    .collect();
-
-    assert_eq!(parse_ruleset(input), expected_ruleset);
-  }
-
-  #[test]
-  fn test_find_contained() {
-    let ruleset: ExtendedRuleset = vec![
+  fn test_find_amount_contained() {
+    let ruleset: Ruleset = vec![
       (RED, vec![(1, WHITE), (2, YELLOW)]),
       (ORANGE, vec![(3, WHITE), (4, YELLOW)]),
       (WHITE, vec![(1, GOLD)]),
@@ -237,25 +181,30 @@ faded blue bags contain no other bags.";
   #[test]
   fn test_find_containers() {
     let ruleset: Ruleset = vec![
-      (WHITE, vec![RED, ORANGE]),
-      (YELLOW, vec![RED, ORANGE]),
-      (GOLD, vec![WHITE, YELLOW]),
-      (BLUE, vec![YELLOW, OLIVE, PLUM]),
-      (OLIVE, vec![GOLD]),
-      (PLUM, vec![GOLD]),
-      (BLACK, vec![OLIVE, PLUM]),
+      (RED, vec![(1, WHITE), (2, YELLOW)]),
+      (ORANGE, vec![(3, WHITE), (4, YELLOW)]),
+      (WHITE, vec![(1, GOLD)]),
+      (YELLOW, vec![(2, GOLD), (9, BLUE)]),
+      (GOLD, vec![(1, OLIVE), (2, PLUM)]),
+      (OLIVE, vec![(3, BLUE), (4, BLACK)]),
+      (PLUM, vec![(5, BLUE), (6, BLACK)]),
+      (BLUE, vec![]),
+      (BLACK, vec![]),
     ]
     .iter()
     .map(|(key, value)| {
       (
         key.to_string(),
-        value.iter().map(|x| x.to_string()).collect(),
+        value
+          .iter()
+          .map(|(amount, color)| (*amount, color.to_string()))
+          .collect(),
       )
     })
     .collect();
 
     assert_eq!(
-      find_containers(&ruleset, &[GOLD.to_string()]),
+      find_containers(&ruleset, GOLD),
       vec![ORANGE, YELLOW, RED, WHITE]
         .into_iter()
         .map(|x| x.to_string())
