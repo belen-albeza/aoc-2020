@@ -275,3 +275,63 @@ fn find_amount_contained(ruleset: &Ruleset, target: &str) -> u32 {
   result
 }
 ```
+
+### Day 8
+
+Today was fun, since I love the topic of VM's, compilers, etc. I'm doing this challenge within a group of other developers so we can compare solutions, help each other, etc. and somebody suggested to make today's puzzle "nice and clean" because we might want to re-use it for other puzzles –apparently this happened at a previous year.
+
+Since today was a public holiday, I put in the time to use proper types/structures and I also introduced some error handling, which may come useful if we end up having to reuse this code for other puzzles.
+
+My main types are:
+
+```rust
+pub enum Opcode {
+  Accumulate,
+  Jump,
+  NoOp,
+}
+
+pub type Instruction = (Opcode, i64);
+
+struct Machine {
+  program: Vec<Instruction>,
+  ip: usize,
+  accumulator: i64,
+  ip_run: HashSet<usize>,
+}
+```
+
+The `ip_run` set is mean to track which program instructions we have visited already, so we can detect loops, which was the point of both part 1 and part 2.
+
+The method that runs the whole program until we reach the end (returns `Ok()`) or we detect a loop (returns a custom `InfiniteLoop` error) is this one:
+
+```rust
+pub fn run(&mut self) -> Result<(), MachineError> {
+  // loop thorugh program until the end
+  while self.ip < self.program.len() {
+    // return error if we detect a loop in the program
+    if self.ip_run.contains(&self.ip) {
+      return Err(MachineError::InifiteLoop);
+    }
+    self.ip_run.insert(self.ip);
+    self.step()?;
+  }
+
+  Ok(())
+}
+```
+
+With that in place, solving part 1 is straight-forward. For part 2, I opted for a brute-force approach, iterating through all the instructions, finding lines that could be patched, and try out that patched program to see if it fixed the infinite loop:
+
+```rust
+for (i, (opcode, arg)) in program.iter().enumerate() {
+  // ...
+  if let Some(patch) = instruction {
+    let mut machine = Machine::new(&[&program[..i], &[patch], &program[i + 1..]].concat());
+    let result = machine.run();
+    if result.is_ok() {
+      return Ok(machine.accumulator);
+    }
+  }
+}
+```
