@@ -84,12 +84,8 @@ pub fn solve_part2(boarding_passes: &[BoardingPass]) -> usize {
   let mut seat_ids: Vec<usize> = boarding_passes.iter().map(|x| x.get_seat_id()).collect();
   seat_ids.sort();
 
-  for i in 0..seat_ids.len() {
-    // skip first and last seats
-    if i == 0 || i >= seat_ids.len() - 1 {
-      continue;
-    }
-
+  // loop thorugh all the ids, but skip first and last seats
+  for i in 1..seat_ids.len() - 1 {
     // detect a gap of a single seat
     if seat_ids[i - 1] == seat_ids[i] - 2 {
       return seat_ids[i] - 1 as usize;
