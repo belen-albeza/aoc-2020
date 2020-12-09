@@ -335,3 +335,22 @@ for (i, (opcode, arg)) in program.iter().enumerate() {
   }
 }
 ```
+
+### Day 9
+
+This puzzle was quick and easy, and I could solve without doing any optimizations at all –not even checking in part 2 if the partial sum was still over target to try a different set.
+
+```rust
+fn find_summands_for_number(target: u64, list: &[u64]) -> Result<&[u64], &str> {
+  for i in 0..list.len() {
+    for j in i + 1..list.len() {
+      let sum = list[i..j].iter().sum::<u64>();
+      if sum == target {
+        return Ok(&list[i..j]);
+      }
+    }
+  }
+
+  Err("Could not find a contiguous set of summands")
+}
+```
