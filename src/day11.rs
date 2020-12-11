@@ -28,8 +28,7 @@ impl Grid {
             '.' => Cell::Floor,
             '#' => Cell::Seat(true),
             _ => {
-              println!("wrong char {:?}", c);
-              unreachable!();
+              panic!("wrong char {:?}", c);
             }
           })
           .collect::<Vec<Cell>>()
@@ -77,7 +76,7 @@ impl Grid {
     false
   }
 
-  pub fn is_estable(&self) -> bool {
+  pub fn is_stable(&self) -> bool {
     self.previous_cells == self.cells
   }
 
@@ -130,7 +129,7 @@ impl Grid {
 pub fn solve_part1(input: &str) -> u64 {
   let mut grid = Grid::new(input);
 
-  while !grid.is_estable() {
+  while !grid.is_stable() {
     grid.step(1, 4);
   }
 
@@ -143,7 +142,7 @@ pub fn solve_part2(input: &str) -> u64 {
 
   let distance = cmp::max(grid.width, grid.height);
 
-  while !grid.is_estable() {
+  while !grid.is_stable() {
     grid.step(distance, 5);
   }
 
