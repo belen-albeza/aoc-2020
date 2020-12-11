@@ -354,3 +354,58 @@ fn find_summands_for_number(target: u64, list: &[u64]) -> Result<&[u64], &str> {
   Err("Could not find a contiguous set of summands")
 }
 ```
+
+### Day 10
+
+Today was a pathfinding problem. In part 1, we already got a path given (the one that used all of the nodes) and just needed to perform a calculation on that one.
+
+In part 2, we needed to find _how many paths_ we could build with the given input. I had problems with this part, since I initially coded a function that returned the paths themselves, and not the amount of paths available.
+
+When it came to memoize one to save calculations (needed because the result was in the order of trillions), it got stuck. I thought it was a problem in my logic, but it came to the amount of memory needed! I ended up changing it for a function that returned the amount of paths instead, and memoizing that made the trick.
+
+In the end it doesn't look that bad:
+
+```rust
+fn find_n_paths(list: &[u64], cache: &mut Cache) -> u64 {
+  if list.len() <= 1 {
+    return list.len() as u64;
+  }
+
+  if let Some(path_count) = cache.get(list) {
+    return *path_count;
+  }
+
+  let mut result: u64 = 0;
+  for i in 1..list.len() {
+    if list[i] - list[0] <= 3 {
+      result += find_n_paths(&list[i..], cache);
+    }
+  }
+
+  cache.insert(list.to_vec(), result);
+  result
+}
+```
+
+### Day 11
+
+Today was easier than yesterday – no optimization was needed. It was very similar to the [Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).
+
+I feel my code ended up too verbose. I opted to have an enum to model whether a cell in the map grid was a empty/occupied seat, or floor, plus I stored the whole map in a single, 1-dimensional vector.
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Cell {
+  Seat(bool), // Seat(is_occupied)
+  Floor,
+}
+
+pub struct Grid {
+  cells: Vec<Cell>,
+  previous_cells: Vec<Cell>,
+  width: usize,
+  height: usize,
+}
+```
+
+I then implemented a `step` method for the `Grid` struct, that mutates the grid into the next tick. The `Grid` also stores the cells as they were in the previous steps, so checking if it didn't change at all after a step was possible.
