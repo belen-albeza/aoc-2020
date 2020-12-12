@@ -409,3 +409,36 @@ pub struct Grid {
 ```
 
 I then implemented a `step` method for the `Grid` struct, that mutates the grid into the next tick. The `Grid` also stores the cells as they were in the previous steps, so checking if it didn't change at all after a step was possible.
+
+### Day 12
+
+I wanted to avoid using floats and `sin`, `cos`, etc. to avoid any kind of rounding errors, and opted to work with integers instead. Luckily, all angles were provided in steps of `±90º`, so rotation was simplified a lot.
+
+This is the method to rotate the `Ship`, which takes as origin its own center. This is simple since we only need to calculate which new direction the `Ship` will be facing:
+
+```rust
+fn rotate(&mut self, angle: i64) {
+  const DIRS: [Dir; 4] = [Dir::East, Dir::South, Dir::West, Dir::North];
+  let steps = angle / 90; // we only allow +-90 angle increments
+
+  let current = DIRS.iter().position(|&x| x == self.facing).unwrap() as i64;
+  let index = (steps + current).rem_euclid(4);
+
+  self.facing = DIRS[index as usize];
+}
+```
+
+For waypoints, they rotate around the `Ship`, so we don't need to calculate a new direction, but a new set of coordinates:
+
+```rust
+  pub fn rotate(&mut self, angle: i64) {
+    let angle = angle.rem_euclid(360); // clamp the angle to 360º
+
+    match angle {
+      90 | -270 => self.position = (-self.position.1, self.position.0), // (-y, x)
+      -90 | 270 => self.position = (self.position.1, -self.position.0), // (y, -x)
+      180 | -180 => self.position = (-self.position.0, -self.position.1), // (-x, -y)
+      _ => unreachable!(),
+    };
+  }
+```

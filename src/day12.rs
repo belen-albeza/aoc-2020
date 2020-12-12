@@ -53,9 +53,11 @@ impl FromStr for Action {
   }
 }
 
+#[derive(Debug, Clone, Copy)]
 struct Ship {
   facing: Dir,
   position: (i64, i64),
+  waypoint: Option<Waypoint>,
 }
 
 impl Ship {
@@ -63,6 +65,7 @@ impl Ship {
     Ship {
       facing: Dir::East,
       position: (0, 0),
+      waypoint: None,
     }
   }
 
@@ -82,11 +85,49 @@ impl Ship {
     self.facing = DIRS[index as usize];
   }
 
+  fn move_to_waypoint(&mut self, times: i64) {
+    self.position.0 += self.waypoint.unwrap().position.0 * times;
+    self.position.1 += self.waypoint.unwrap().position.1 * times;
+  }
+
   pub fn exec(&mut self, action: Action) {
-    match action {
-      Action::Advance(value) => self.move_to(self.facing, value),
-      Action::Move(dir, value) => self.move_to(dir, value),
-      Action::Rotate(angle) => self.rotate(angle),
+    if let Some(mut waypoint) = self.waypoint {
+      match action {
+        Action::Move(dir, value) => waypoint.move_to(dir, value),
+        Action::Rotate(angle) => waypoint.rotate(angle),
+        Action::Advance(value) => self.move_to_waypoint(value),
+      }
+      self.waypoint = Some(waypoint);
+    } else {
+      match action {
+        Action::Advance(value) => self.move_to(self.facing, value),
+        Action::Move(dir, value) => self.move_to(dir, value),
+        Action::Rotate(angle) => self.rotate(angle),
+      };
+    }
+  }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Waypoint {
+  position: (i64, i64),
+}
+
+impl Waypoint {
+  pub fn move_to(&mut self, direction: Dir, distance: i64) {
+    let delta = direction.to_delta();
+    self.position.0 += distance * delta.0;
+    self.position.1 += distance * delta.1;
+  }
+
+  pub fn rotate(&mut self, angle: i64) {
+    let angle = angle.rem_euclid(360); // clamp the angle to 360º
+
+    match angle {
+      90 | -270 => self.position = (-self.position.1, self.position.0), // (-y, x)
+      -90 | 270 => self.position = (self.position.1, -self.position.0), // (y, -x)
+      180 | -180 => self.position = (-self.position.0, -self.position.1), // (-x, -y)
+      _ => unreachable!(),
     };
   }
 }
@@ -107,7 +148,19 @@ pub fn solve_part1(actions: &[Action]) -> i64 {
     ship.exec(*action);
   }
 
-  ship.position.0 + ship.position.1
+  ship.position.0.abs() + ship.position.1.abs()
+}
+
+#[aoc(day12, part2)]
+pub fn solve_part2(actions: &[Action]) -> i64 {
+  let mut ship = Ship::new();
+  ship.waypoint = Some(Waypoint { position: (10, -1) });
+
+  for action in actions.into_iter() {
+    ship.exec(*action);
+  }
+
+  ship.position.0.abs() + ship.position.1.abs()
 }
 
 #[cfg(test)]
@@ -179,6 +232,23 @@ mod tests {
   }
 
   #[test]
+  fn test_rotate_waypoint() {
+    let mut waypoint = Waypoint { position: (1, -2) };
+    waypoint.rotate(90);
+    assert_eq!(waypoint.position, (2, 1));
+    waypoint.rotate(-90);
+    assert_eq!(waypoint.position, (1, -2));
+    waypoint.rotate(180);
+    assert_eq!(waypoint.position, (-1, 2));
+    waypoint.rotate(-180);
+    assert_eq!(waypoint.position, (1, -2));
+    waypoint.rotate(270);
+    assert_eq!(waypoint.position, (-2, -1));
+    waypoint.rotate(-270);
+    assert_eq!(waypoint.position, (1, -2));
+  }
+
+  #[test]
   fn test_solve_part1() {
     let input = vec![
       Action::Advance(10),
@@ -188,5 +258,17 @@ mod tests {
       Action::Advance(11),
     ];
     assert_eq!(solve_part1(&input), 25);
+  }
+
+  #[test]
+  fn test_solve_part2() {
+    let input = vec![
+      Action::Advance(10),
+      Action::Move(Dir::North, 3),
+      Action::Advance(7),
+      Action::Rotate(90),
+      Action::Advance(11),
+    ];
+    assert_eq!(solve_part2(&input), 286);
   }
 }
