@@ -50,19 +50,16 @@ fn find_common_timestamp_in_list(buses: Vec<(u64, u64)>) -> Result<u64, String> 
   let mut t = 0;
   let mut coeff = 1;
   for i in 1..buses.len() {
-    let start = t;
     let (curr_gap, curr_bus_id) = buses[i];
     let (_, prev_bus_id) = buses[i - 1];
 
     coeff = coeff * prev_bus_id;
 
-    let mut n = 0;
     loop {
       if (t + curr_gap) % curr_bus_id == 0 {
         break;
       }
-      n += 1;
-      t = start + coeff * n;
+      t += coeff;
     }
   }
 
