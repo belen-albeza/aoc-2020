@@ -442,3 +442,50 @@ For waypoints, they rotate around the `Ship`, so we don't need to calculate a ne
     };
   }
 ```
+
+### Day 13
+
+Today was rough, because of part 2. Here a simple brute force approach like this one works for smaller list, but not when we start to have more than 4 buses in our list.
+
+```rust
+ let mut timestamp = 0;
+
+  loop {
+    if buses
+      .iter()
+      .enumerate()
+      .all(|(gap, &bus)| is_valid_timestamp(timestamp, bus, gap as u64))
+    {
+      break;
+    }
+
+    timestamp += 1;
+  }
+```
+
+For optimization, this is some kind of "prune", in the sense that we can't be checking all potential results, but need a way to discard in advance those numbers that we know are invalid in advance.
+
+I'm sure there must be a nice and simple, mathematical theorem about this, and probably with a formula, but I'm not a major in Maths. It turns out we only need to keep accumulating the buses ID's as multipliers to have a potential valid timestamp for all the buses.
+
+```rust
+let mut t = 0;
+let mut coeff = 1;
+for i in 1..buses.len() {
+  let start = t;
+  let (curr_gap, curr_bus_id) = buses[i];
+  let (_, prev_bus_id) = buses[i - 1];
+
+  coeff = coeff * prev_bus_id;
+
+  let mut n = 0;
+  loop {
+    if (t + curr_gap) % curr_bus_id == 0 {
+      break;
+    }
+    n += 1;
+    t = start + coeff * n;
+  }
+}
+
+Ok(t)
+```
