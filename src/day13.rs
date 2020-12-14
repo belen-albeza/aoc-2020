@@ -53,6 +53,9 @@ fn find_common_timestamp_in_list(buses: Vec<(u64, u64)>) -> Result<u64, String> 
     let (curr_gap, curr_bus_id) = buses[i];
     let (_, prev_bus_id) = buses[i - 1];
 
+    // NOTE: this should be minimum common multiple of every ID up to this point,
+    // but since all the numbers in the input are primes, just a plain
+    // multiplication works
     coeff = coeff * prev_bus_id;
 
     loop {
