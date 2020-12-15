@@ -486,3 +486,56 @@ for i in 1..buses.len() {
 
 Ok(t)
 ```
+
+### Day 14
+
+This day I was sick, and the code is quite messy… Maybe I'll get back to this after the last day of the challenge.
+
+I still need to wrap my head around how you are supposed to work with Rust (for instance, no inheritance) in order to write more idiomatic code.
+
+Today's puzzle wasn't particularly hard, but laborious instead. I've learned that by implementing the `FromStr` trait, not only you can call `Foo::from_str("...") `, but you can also call its "inverse" `"...".parse::<Foo>()`, which came really handy:
+
+```rust
+impl FromStr for Mask {
+  type Err = std::num::ParseIntError;
+
+  fn from_str(text: &str) -> Result<Self, Self::Err> {
+    let and_mask = text.to_lowercase().replace('x', "1");
+    let or_mask = text.to_lowercase().replace('x', "0");
+
+    Ok(Self {
+      and: u64::from_str_radix(&and_mask, 2)?,
+      or: u64::from_str_radix(&or_mask, 2)?,
+      raw: format!("{:0>36}", text.to_lowercase()),
+    })
+  }
+}
+```
+
+### Day 15
+
+I was lucky and I didn't have to change anything for part 2! It's definitely slower, but my implementation took ~3s to find the solution, so I'll take that.
+
+Since the game we had to implement was a sequence, this was the perfect chance to practice implementing custom iterators:
+
+```rust
+impl Iterator for Game {
+  type Item = u64;
+
+  fn next(&mut self) -> Option<u64> {
+    // ... (game rules here)
+    Some(number)
+  }
+}
+```
+
+Then running the game for N rounds becomes a matter of using that iterator:
+
+```rust
+fn run_game(starters: &[u64], turns: u64) -> Result<u64, String> {
+  let mut game = Game::new(starters);
+  game
+    .nth((turns - 1) as usize)
+    .ok_or(format!("Game ended before turn #{}", turns))
+}
+```

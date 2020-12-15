@@ -79,7 +79,7 @@ impl Default for Mask {
     Mask {
       and: 0xffff_ffff_ffff_ffff,
       or: 0x0000_0000_0000_0000,
-      raw: "0000000000000000".to_string(),
+      raw: format!("{:036b}", 0),
     }
   }
 }
@@ -94,7 +94,7 @@ impl FromStr for Mask {
     Ok(Self {
       and: u64::from_str_radix(&and_mask, 2)?,
       or: u64::from_str_radix(&or_mask, 2)?,
-      raw: text.to_lowercase(),
+      raw: format!("{:0>36}", text.to_lowercase()),
     })
   }
 }
@@ -233,7 +233,7 @@ mod tests {
       Ok(Mask {
         or: 0b0100,
         and: 0b1101,
-        raw: "x10x".to_string()
+        raw: "00000000000000000000000000000000x10x".to_string()
       })
     );
 
